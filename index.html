@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="来訪者向け工場紹介タッチパネルのデモ（社名・内容は架空）。制作：株式会社ソフトハウス">
+<title>みなと工場 タッチパネルデモ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=Zen+Kaku+Gothic+New:wght@500;700;900&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+/* Kiosk prototype: deliberately single-theme (a fixed-light lobby display with a dark attract loop). */
+:root{
+  --night:#0F1D24;
+  --night-2:#16303A;
+  --ground:#EDF1EF;
+  --panel:#FFFFFF;
+  --ink:#14232B;
+  --muted:#586A70;
+  --line:#D2DBD8;
+  --teal:#16757A;
+  --teal-soft:#DAEAE8;
+  --accent:#E0592A;
+  --accent-soft:#FBE3D8;
+  --on-dark:#EAF2F0;
+  --on-dark-muted:#9DB4B3;
+  --f-body:"BIZ UDPGothic","Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+  --f-display:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--night);color:var(--ink);font-family:var(--f-body);overflow:hidden;padding-inline:16px;box-sizing:border-box}
+#viewport{position:relative;height:100%;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%);transform-origin:center;background:var(--ground);overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
+button:focus-visible{outline:4px solid var(--accent);outline-offset:4px}
+.screen{position:absolute;inset:0;transition:opacity .45s ease}
+.screen.out{opacity:0;pointer-events:none}
+.mono{font-family:var(--f-mono);letter-spacing:.06em}
+
+/* ---------- Attract ---------- */
+#attract{background:var(--night);color:var(--on-dark);cursor:pointer}
+#attract canvas{position:absolute;inset:0;width:100%;height:100%}
+.attract-inner{position:absolute;left:140px;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:28px;max-width:1100px}
+.attract-eyebrow{font-size:28px;color:var(--on-dark-muted);letter-spacing:.2em}
+.attract-title{font-family:var(--f-display);font-weight:900;font-size:168px;line-height:1;letter-spacing:.04em;margin:0}
+.attract-sub{font-size:40px;line-height:1.5;margin:0;color:var(--on-dark)}
+.touch-cue{display:flex;align-items:center;gap:32px;margin-top:48px}
+.pulse{position:relative;width:104px;height:104px;flex:none}
+.pulse i{position:absolute;inset:0;border-radius:50%;border:4px solid var(--accent)}
+.pulse i:nth-child(1){animation:ring 2.4s ease-out infinite}
+.pulse i:nth-child(2){animation:ring 2.4s ease-out 1.2s infinite}
+.pulse b{position:absolute;inset:30px;border-radius:50%;background:var(--accent)}
+@keyframes ring{from{transform:scale(.45);opacity:1}to{transform:scale(1.35);opacity:0}}
+.touch-cue p{margin:0;font-size:44px;font-weight:700;font-family:var(--f-display)}
+.touch-cue small{display:block;font-size:28px;color:var(--on-dark-muted);font-weight:500;font-family:var(--f-body);margin-top:6px}
+.attract-lang{position:absolute;right:120px;bottom:110px;display:flex;gap:20px}
+.attract-lang button{min-width:230px;height:96px;border-radius:48px;border:3px solid var(--on-dark-muted);font-size:32px;font-weight:700;color:var(--on-dark)}
+.attract-lang button:active{background:var(--night-2)}
+.attract-note{position:absolute;left:140px;bottom:56px;font-size:22px;color:var(--on-dark-muted)}
+
+/* ---------- Top bar ---------- */
+.topbar{position:absolute;left:0;right:0;top:0;height:96px;display:flex;align-items:center;gap:32px;padding:0 48px;background:var(--panel);border-bottom:2px solid var(--line);z-index:5}
+.plant{display:flex;align-items:center;gap:18px}
+.plant svg{width:56px;height:56px}
+.plant b{display:block;font-family:var(--f-display);font-size:34px;font-weight:900;letter-spacing:.04em}
+.plant small{display:block;font-size:20px;color:var(--muted)}
+.sample{margin-left:12px;padding:8px 18px;border-radius:8px;background:var(--accent-soft);color:#9A3614;font-size:20px;font-weight:700}
+.tools{margin-left:auto;display:flex;align-items:center;gap:14px}
+.chip{height:60px;padding:0 22px;border-radius:30px;border:2px solid var(--line);font-size:22px;font-weight:700;color:var(--ink);background:var(--panel)}
+.chip.demo{border-style:dashed;color:var(--muted);font-weight:400}
+.langsw{display:flex;border:2px solid var(--line);border-radius:32px;overflow:hidden}
+.langsw button{height:60px;padding:0 26px;font-size:24px;font-weight:700;color:var(--muted)}
+.langsw button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.clock{font-size:34px;font-weight:600;min-width:112px;text-align:right;font-variant-numeric:tabular-nums}
+
+/* ---------- Home ---------- */
+#home{top:96px;padding:56px 72px 64px;display:flex;flex-direction:column;gap:40px}
+.home-head{display:flex;align-items:flex-end;justify-content:space-between;gap:40px}
+.home-head h1{margin:0;font-family:var(--f-display);font-weight:900;font-size:76px;letter-spacing:.02em;text-wrap:balance}
+.home-head p{margin:0;font-size:32px;color:var(--muted)}
+.tiles{flex:1;display:grid;grid-template-columns:1.25fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:28px}
+.tile{position:relative;display:flex;flex-direction:column;justify-content:space-between;text-align:left;padding:40px 44px;border-radius:20px;background:var(--panel);border:2px solid var(--line);transition:transform .15s ease, background .15s ease}
+.tile:active{transform:scale(.985);background:var(--teal-soft)}
+.tile.lead{grid-row:1 / 3;background:var(--teal);color:var(--on-dark);border-color:var(--teal)}
+.tile.lead:active{background:#115F63}
+.tile svg{width:96px;height:96px;stroke:currentColor;fill:none;stroke-width:5;stroke-linejoin:round;stroke-linecap:round;color:var(--teal)}
+.tile.lead svg{width:150px;height:150px;color:var(--on-dark)}
+.tile h2{margin:0;font-family:var(--f-display);font-size:50px;font-weight:900;line-height:1.2}
+.tile.lead h2{font-size:72px}
+.tile p{margin:10px 0 0;font-size:26px;line-height:1.5;color:var(--muted)}
+.tile.lead p{color:#CFE5E3;font-size:32px}
+.tile .go{position:absolute;right:40px;top:40px;width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:var(--ground);font-size:36px;color:var(--ink)}
+.tile.lead .go{background:var(--accent);color:#fff;width:96px;height:96px;font-size:44px}
+
+/* ---------- Detail ---------- */
+#detail{top:96px;display:flex;flex-direction:column}
+.d-head{padding:40px 72px 0;display:flex;align-items:baseline;gap:28px}
+.d-head .code{font-size:22px;color:var(--teal);font-weight:600}
+.d-head h1{margin:0;font-family:var(--f-display);font-weight:900;font-size:64px}
+.d-head p{margin:0 0 0 auto;font-size:26px;color:var(--muted)}
+.d-body{flex:1;min-height:0;padding:32px 72px 32px;display:flex;gap:40px}
+.navbar{height:128px;flex:none;display:flex;align-items:center;gap:16px;padding:0 48px;background:var(--panel);border-top:2px solid var(--line)}
+.btn-home{height:88px;padding:0 40px 0 30px;border-radius:44px;background:var(--ink);color:var(--panel);font-size:30px;font-weight:700;display:flex;align-items:center;gap:14px}
+.btn-home svg{width:40px;height:40px;fill:none;stroke:currentColor;stroke-width:4;stroke-linejoin:round}
+.tabs{display:flex;gap:10px;margin-left:24px}
+.tabs button{height:80px;padding:0 30px;border-radius:40px;font-size:26px;font-weight:700;color:var(--muted);border:2px solid var(--line)}
+.tabs button[aria-current="page"]{background:var(--teal-soft);border-color:var(--teal);color:var(--teal)}
+.panel{background:var(--panel);border:2px solid var(--line);border-radius:20px}
+
+/* about */
+.map{flex:1.5;position:relative;padding:20px}
+.map svg{width:100%;height:100%}
+.hs{cursor:pointer}
+.hs circle.dot{fill:var(--ink);transition:fill .2s}
+.hs.on circle.dot{fill:var(--accent)}
+.hs circle.halo{fill:var(--accent);opacity:0}
+.hs.on circle.halo{animation:halo 1.8s ease-out infinite}
+@keyframes halo{from{opacity:.45;transform:scale(1)}to{opacity:0;transform:scale(1.9)}}
+.hs text{font-family:var(--f-mono);font-weight:600;font-size:30px;fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.map-hint{position:absolute;left:36px;top:30px;font-size:22px;color:var(--muted);background:var(--panel);padding:6px 14px;border-radius:8px}
+.side{flex:1;display:flex;flex-direction:column;gap:24px}
+.info{flex:1;padding:40px 44px;display:flex;flex-direction:column;gap:20px}
+.info .tag{align-self:flex-start;font-size:22px;padding:6px 16px;border-radius:8px;background:var(--accent-soft);color:#9A3614;font-weight:700}
+.info h3{margin:0;font-family:var(--f-display);font-size:52px;font-weight:900}
+.info p{margin:0;font-size:30px;line-height:1.7}
+.photo{flex:1;min-height:150px;border-radius:14px;display:grid;place-items:center;color:var(--muted);font-size:22px;background:repeating-linear-gradient(135deg,var(--ground) 0 18px,#E3E9E7 18px 36px);border:2px dashed var(--line)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:26px 16px}
+.fact{padding:0 22px;border-left:2px solid var(--line)}
+.fact:first-child{border-left:0}
+.fact dt{font-size:20px;color:var(--muted)}
+.fact dd{margin:6px 0 0;font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* products */
+.scenes{flex:none;width:520px;display:grid;grid-template-rows:repeat(4,1fr);gap:18px}
+.scene{display:flex;align-items:center;gap:28px;padding:0 32px;border-radius:18px;background:var(--panel);border:2px solid var(--line);text-align:left;font-size:38px;font-family:var(--f-display);font-weight:700}
+.scene svg{width:78px;height:78px;fill:none;stroke:currentColor;stroke-width:5;stroke-linejoin:round;stroke-linecap:round;color:var(--teal)}
+.scene[aria-pressed="true"]{background:var(--teal);color:var(--on-dark);border-color:var(--teal)}
+.scene[aria-pressed="true"] svg{color:var(--on-dark)}
+.stage-scene{flex:1;display:flex;gap:40px;padding:48px}
+.big-ico{flex:none;width:420px;display:grid;place-items:center;border-radius:20px;background:var(--teal-soft)}
+.big-ico svg{width:300px;height:300px;fill:none;stroke:var(--teal);stroke-width:4;stroke-linejoin:round;stroke-linecap:round}
+.big-ico svg .mat{stroke:var(--accent);stroke-width:7}
+.scene-copy{flex:1;display:flex;flex-direction:column;gap:24px;justify-content:center}
+.scene-copy h3{margin:0;font-family:var(--f-display);font-size:60px;font-weight:900}
+.scene-copy p{margin:0;font-size:32px;line-height:1.75}
+.legend{display:flex;align-items:center;gap:14px;font-size:24px;color:var(--muted)}
+.legend i{width:48px;height:7px;border-radius:4px;background:var(--accent)}
+
+/* process */
+.proc{flex:1;display:flex;flex-direction:column;gap:28px}
+.track{position:relative;display:grid;grid-template-columns:repeat(5,1fr);padding:28px 20px}
+.track .rail{position:absolute;left:10%;right:10%;top:72px;height:8px;border-radius:4px;background:var(--line)}
+.track .fill{position:absolute;left:10%;top:72px;height:8px;border-radius:4px;background:var(--teal);transition:width .5s ease}
+.track .flowdot{position:absolute;top:66px;width:20px;height:20px;border-radius:50%;background:var(--accent);animation:flow 2s linear infinite}
+.step{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;font-size:28px;font-weight:700;color:var(--muted)}
+.step .n{width:96px;height:96px;border-radius:50%;display:grid;place-items:center;background:var(--panel);border:4px solid var(--line);font-family:var(--f-mono);font-size:34px;color:var(--muted);transition:all .3s}
+.step.done .n{border-color:var(--teal);color:var(--teal)}
+.step.cur{color:var(--ink)}
+.step.cur .n{background:var(--teal);border-color:var(--teal);color:#fff;transform:scale(1.12)}
+.proc-main{flex:1;min-height:0;display:flex;gap:36px}
+.proc-copy{flex:1;padding:36px 40px;display:flex;flex-direction:column;gap:14px}
+.proc-copy .code{font-size:24px;color:var(--teal);font-weight:600}
+.proc-copy h3{margin:0;font-family:var(--f-display);font-size:60px;font-weight:900}
+.proc-copy p{margin:0;font-size:29px;line-height:1.7}
+.pager{margin-top:auto;display:flex;gap:16px}
+.pager button{flex:1;height:84px;border-radius:48px;font-size:30px;font-weight:700;border:3px solid var(--ink)}
+.pager button.primary{background:var(--ink);color:var(--panel)}
+.pager button:disabled{opacity:.3}
+
+/* video mock */
+.video{position:relative;flex:1.25;border-radius:20px;overflow:hidden;background:var(--night);color:var(--on-dark);display:flex;flex-direction:column}
+.video .screenarea{flex:1;display:grid;place-items:center;position:relative;background:radial-gradient(circle at 30% 30%,var(--night-2),var(--night) 70%)}
+.video .ph{position:absolute;left:28px;top:24px;font-size:22px;color:var(--on-dark-muted)}
+.playbtn{width:150px;height:150px;border-radius:50%;background:var(--accent);display:grid;place-items:center}
+.playbtn svg{width:60px;height:60px;fill:#fff;margin-left:10px}
+.video .nowplaying{display:none;font-size:30px;color:var(--on-dark)}
+.video.playing .playbtn{display:none}
+.video.playing .nowplaying{display:block}
+.video .bar{height:80px;display:flex;align-items:center;gap:22px;padding:0 28px;background:#0A151A}
+.video .bar span{font-size:24px;white-space:nowrap}
+.prog{flex:1;height:10px;border-radius:5px;background:#2A3E46;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--accent)}
+.video.playing .prog i{animation:prog 8s linear forwards}
+@keyframes prog{to{width:100%}}
+
+/* safety */
+.kpis{flex:1;display:flex;flex-direction:column;gap:24px}
+.kpi{flex:1;padding:32px 40px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+.kpi dt{font-size:26px;color:var(--muted)}
+.kpi dd{margin:0;font-family:var(--f-display);font-weight:900;font-size:80px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi dd small{font-size:34px;font-weight:700;margin-left:8px}
+.kpi .note{font-size:22px;color:var(--muted)}
+
+/* community */
+.cards{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:26px}
+.card{display:flex;flex-direction:column;overflow:hidden;padding:0}
+.card .photo{border-radius:0;border:0;border-bottom:2px solid var(--line);flex:1.1}
+.card .txt{flex:1;padding:30px 30px 34px;display:flex;flex-direction:column;gap:14px}
+.card .when{font-size:22px;color:var(--teal);font-weight:600}
+.card h3{margin:0;font-family:var(--f-display);font-size:40px;font-weight:900;line-height:1.25}
+.card p{margin:0;font-size:25px;line-height:1.7;color:var(--muted)}
+
+/* idle warning */
+#idle{position:absolute;inset:0;background:rgba(15,29,36,.72);display:grid;place-items:center;z-index:20}
+.idle-box{width:900px;padding:64px 72px;border-radius:28px;background:var(--panel);display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center}
+.idle-box h2{margin:0;font-family:var(--f-display);font-size:52px;font-weight:900}
+.idle-box p{margin:0;font-size:30px;color:var(--muted);line-height:1.6}
+.idle-count{font-family:var(--f-mono);font-size:140px;font-weight:600;color:var(--accent);line-height:1;font-variant-numeric:tabular-nums}
+.idle-box button{margin-top:12px;height:104px;padding:0 72px;border-radius:52px;background:var(--ink);color:var(--panel);font-size:34px;font-weight:700}
+
+@keyframes flow{from{left:10%}to{left:var(--flow-end,10%)}}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+
+</head>
+<body>
+<div id="viewport">
+  <div id="stage" aria-live="polite">
+    <section id="attract" class="screen" data-act="start" aria-label="待機画面">
+      <canvas id="bg" aria-hidden="true"></canvas>
+      <div class="attract-inner">
+        <div class="attract-eyebrow mono">SAMPLE CHEMICAL · MINATO PLANT</div>
+        <h1 class="attract-title">みなと工場</h1>
+        <p class="attract-sub">暮らしを支える素材が、ここから生まれています。</p>
+        <div class="touch-cue">
+          <div class="pulse" aria-hidden="true"><i></i><i></i><b></b></div>
+          <p>画面にタッチしてスタート<small>Touch the screen to start</small></p>
+        </div>
+      </div>
+      <div class="attract-lang">
+        <button data-act="start" data-lang="ja">日本語</button>
+        <button data-act="start" data-lang="en">English</button>
+      </div>
+      <div class="attract-note">待機画面：実機では工場の映像をループ再生します（デモ／社名・内容は架空）</div>
+    </section>
+
+    <header class="topbar" id="topbar" hidden>
+      <div class="plant">
+        <svg viewBox="0 0 56 56" aria-hidden="true"><path d="M28 4 L49 16 V40 L28 52 L7 40 V16 Z" fill="none" stroke="#16757A" stroke-width="4"/><path d="M28 15 L39 21.5 V34.5 L28 41 L17 34.5 V21.5 Z" fill="#E0592A"/></svg>
+        <div><b id="tb-name">みなと工場</b><small id="tb-co">サンプル化学株式会社（架空）</small></div>
+      </div>
+      <div class="sample" id="tb-sample">デモ｜社名・内容はすべて架空です</div>
+      <div class="tools">
+        <button class="chip demo" id="idle-chip" data-act="idle-toggle">自動リセット 60秒</button>
+        <button class="chip demo" data-act="fs" id="fs-chip">全画面</button>
+        <div class="langsw" role="group" aria-label="Language">
+          <button data-act="lang" data-lang="ja" aria-pressed="true">日本語</button>
+          <button data-act="lang" data-lang="en" aria-pressed="false">EN</button>
+        </div>
+        <div class="clock mono" id="clock">--:--</div>
+      </div>
+    </header>
+
+    <section id="home" class="screen out" aria-label="トップ"></section>
+    <section id="detail" class="screen out" aria-label="詳細"></section>
+
+    <div id="idle" hidden>
+      <div class="idle-box" role="alertdialog" aria-labelledby="idle-h">
+        <h2 id="idle-h"></h2>
+        <p id="idle-p"></p>
+        <div class="idle-count" id="idle-n">10</div>
+        <button data-act="keep" id="idle-btn"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const stage=document.getElementById('stage');
+const $=id=>document.getElementById(id);
+
+/* ---------------- content (sample copy) ---------------- */
+const ICON={
+  about:'<svg viewBox="0 0 120 120"><path d="M12 104 V58 L36 72 V58 L60 72 V58 L84 72 V26 H104 V104 Z"/><path d="M28 88 h12 M52 88 h12 M76 88 h12"/></svg>',
+  products:'<svg viewBox="0 0 120 120"><path d="M60 12 L101 36 V84 L60 108 L19 84 V36 Z"/><circle cx="60" cy="60" r="22"/></svg>',
+  process:'<svg viewBox="0 0 120 120"><circle cx="20" cy="60" r="10"/><circle cx="60" cy="60" r="10"/><circle cx="100" cy="60" r="10"/><path d="M30 60 H50 M70 60 H90"/><path d="M20 30 H100 M92 22 L100 30 L92 38"/></svg>',
+  safety:'<svg viewBox="0 0 120 120"><path d="M60 12 L100 26 V58 Q100 92 60 108 Q20 92 20 58 V26 Z"/><path d="M42 60 L55 73 L80 46"/></svg>',
+  community:'<svg viewBox="0 0 120 120"><circle cx="40" cy="42" r="14"/><circle cx="80" cy="42" r="14"/><path d="M14 100 Q14 70 40 70 Q66 70 66 100"/><path d="M54 100 Q54 70 80 70 Q106 70 106 100"/></svg>'
+};
+const SCENE_ICON={
+  car:'<svg viewBox="0 0 120 120"><path d="M12 78 L24 52 Q28 44 38 44 H82 Q92 44 96 52 L108 78 V90 H12 Z"/><path class="mat" d="M12 80 H30 M90 80 H108"/><circle cx="34" cy="92" r="10"/><circle cx="86" cy="92" r="10"/><path d="M34 58 H86"/></svg>',
+  phone:'<svg viewBox="0 0 120 120"><rect x="36" y="12" width="48" height="96" rx="9"/><path d="M52 22 H68"/><rect class="mat" x="46" y="44" width="28" height="36" rx="3"/></svg>',
+  medical:'<svg viewBox="0 0 120 120"><path d="M20 44 Q60 30 100 44 V72 Q60 90 20 72 Z"/><path class="mat" d="M30 50 Q60 40 90 50 M30 60 Q60 52 90 60 M30 70 Q60 64 90 70"/><path d="M20 50 H8 M100 50 H112"/></svg>',
+  home:'<svg viewBox="0 0 120 120"><path d="M14 58 L60 20 L106 58"/><path d="M24 50 V104 H96 V50"/><path class="mat" d="M30 60 H90"/><rect x="50" y="76" width="20" height="28"/></svg>'
+};
+
+const T={
+  ui:{
+    name:{ja:'みなと工場',en:'Minato Plant'},
+    co:{ja:'サンプル化学株式会社（架空）',en:'Sample Chemical Co. (fictional)'},
+    sample:{ja:'デモ｜社名・内容はすべて架空です',en:'Demo — company and content are fictional'},
+    welcome:{ja:'ようこそ、みなと工場へ',en:'Welcome to the Minato Plant'},
+    pick:{ja:'見たい項目にタッチしてください',en:'Touch a topic to explore'},
+    top:{ja:'トップへ',en:'Home'},
+    reset:{ja:'自動リセット',en:'Auto reset'},
+    sec:{ja:'秒',en:'s'},
+    fs:{ja:'全画面',en:'Fullscreen'},
+    idleH:{ja:'操作がありません',en:'Are you still there?'},
+    idleP:{ja:'まもなく最初の画面に戻ります',en:'The screen will return to the start shortly'},
+    idleBtn:{ja:'このまま見る',en:'Keep exploring'},
+    prev:{ja:'← 前へ',en:'← Back'},
+    next:{ja:'次へ →',en:'Next →'},
+    done:{ja:'トップへ戻る',en:'Back to home'},
+    photo:{ja:'撮影写真が入ります',en:'Photo to be shot on site'},
+    tapmap:{ja:'地図の番号にタッチ',en:'Touch a letter on the map'},
+    playing:{ja:'再生中（デモ）',en:'Playing (demo)'},
+    matnote:{ja:'この工場の素材が使われている部分',en:'Where our materials are used'}
+  },
+  pages:[
+    {id:'about',code:'SITE MAP',title:{ja:'工場について',en:'About the Plant'},desc:{ja:'敷地マップで工場の中をのぞいてみましょう',en:'Take a look inside with the site map'}},
+    {id:'products',code:'PRODUCTS',title:{ja:'製品と暮らし',en:'Products in Daily Life'},desc:{ja:'ここで生まれた素材は、身近なところで使われています',en:'Materials made here are part of everyday life'}},
+    {id:'process',code:'5 STEPS',title:{ja:'ものづくりの流れ',en:'How We Make It'},desc:{ja:'原料が製品になるまでを5つのステップで',en:'From raw material to product in five steps'}},
+    {id:'safety',code:'SAFETY',title:{ja:'安全・環境',en:'Safety & Environment'},desc:{ja:'安全を最優先に、環境への負荷を減らします',en:'Safety first, and a smaller footprint'}},
+    {id:'community',code:'COMMUNITY',title:{ja:'地域とともに',en:'With the Community'},desc:{ja:'地域のまちと歩む活動を紹介します',en:'Our activities with the local community'}}
+  ],
+  hotspots:{
+    A:{name:{ja:'製造エリア',en:'Production Area'},tag:{ja:'工場の中心',en:'Heart of the plant'},text:{ja:'反応や精製の設備が並ぶ、工場の中心となるエリアです。安全のため、見学ルートは通路側に限られます。',en:'Reaction and purification units line this central area. For safety, the visitor route stays on the walkway side.'}},
+    B:{name:{ja:'品質管理棟',en:'Quality Control'},tag:{ja:'分析・検査',en:'Analysis & testing'},text:{ja:'できあがった製品が規格どおりかを分析し、検査に合格したものだけを出荷します。',en:'Every batch is analysed here. Only products that pass inspection are shipped.'}},
+    C:{name:{ja:'出荷エリア',en:'Shipping'},tag:{ja:'物流',en:'Logistics'},text:{ja:'検査を終えた製品を梱包し、トラックで全国のお客様のもとへ届けます。',en:'Inspected products are packed and trucked to customers across Japan.'}},
+    D:{name:{ja:'事務棟・見学受付',en:'Office & Visitor Center'},tag:{ja:'現在地',en:'You are here'},text:{ja:'いまいる場所です。見学の受付と、工場全体の管理を行っています。',en:'You are here. This building handles visitor reception and plant administration.'}}
+  },
+  facts:[
+    {k:{ja:'所在地',en:'Location'},v:{ja:'◯◯県◯◯市',en:'XX City, XX'}},
+    {k:{ja:'操業開始',en:'Operating since'},v:{ja:'◯◯◯◯年',en:'19XX'}},
+    {k:{ja:'従業員数',en:'Employees'},v:{ja:'約◯◯◯名',en:'approx. XXX'}},
+    {k:{ja:'敷地面積',en:'Site area'},v:{ja:'約◯◯万m²',en:'approx. XX ha'}}
+  ],
+  scenes:[
+    {id:'car',name:{ja:'クルマ',en:'Cars'},text:{ja:'軽くて丈夫な樹脂が、バンパーや内装に使われています。車が軽くなると、燃費がよくなりCO₂も減ります。',en:'Light, tough resins go into bumpers and interiors. Lighter cars use less fuel and emit less CO₂.'}},
+    {id:'phone',name:{ja:'スマートフォン',en:'Smartphones'},text:{ja:'小さな電子部品をつくる工程で、高い精度が求められる材料が活躍しています。',en:'High-precision materials help make the tiny electronic parts inside.'}},
+    {id:'medical',name:{ja:'医療・衛生',en:'Health & Hygiene'},text:{ja:'マスクやおむつの不織布など、清潔で安心な暮らしを支えています。',en:'Nonwoven fabrics for masks and diapers support clean, safe living.'}},
+    {id:'home',name:{ja:'住まい',en:'Homes'},text:{ja:'断熱材や塗料の原料として、快適で長持ちする住まいづくりに役立っています。',en:'Used in insulation and coatings for comfortable, long-lasting homes.'}}
+  ],
+  steps:[
+    {name:{ja:'原料受入',en:'Receiving'},text:{ja:'タンクローリーやパイプラインで原料が届きます。受け入れ前に成分を確認し、専用のタンクで保管します。',en:'Raw materials arrive by tanker and pipeline, are checked, and are stored in dedicated tanks.'},vid:'0:20'},
+    {name:{ja:'反応',en:'Reaction'},text:{ja:'温度と圧力を細かく制御しながら、原料を化学反応させて新しい物質をつくります。',en:'Under tightly controlled heat and pressure, raw materials react to form new substances.'},vid:'0:25'},
+    {name:{ja:'精製',en:'Purification'},text:{ja:'反応でできたものから不要な成分を取り除き、純度を高めます。',en:'Unwanted components are removed to raise purity.'},vid:'0:20'},
+    {name:{ja:'品質検査',en:'Inspection'},text:{ja:'品質管理棟で分析し、お客様との約束どおりの品質かを確かめます。',en:'Samples are analysed to confirm the quality promised to customers.'},vid:'0:15'},
+    {name:{ja:'出荷',en:'Shipping'},text:{ja:'合格した製品を梱包し、全国のお客様のもとへ送り出します。',en:'Approved products are packed and sent to customers nationwide.'},vid:'0:15'}
+  ],
+  kpis:[
+    {k:{ja:'無災害時間',en:'Hours without lost-time injury'},v:'◯◯◯',u:{ja:'万時間',en:'× 10⁴ h'},n:{ja:'20XX年◯月時点',en:'as of 20XX'}},
+    {k:{ja:'CO₂排出量の削減',en:'CO₂ reduction'},v:'◯◯',u:{ja:'%',en:'%'},n:{ja:'20XX年度比',en:'vs. FY20XX'}},
+    {k:{ja:'防災訓練',en:'Emergency drills'},v:'◯◯',u:{ja:'回／年',en:'per year'},n:{ja:'地域の消防と合同で実施',en:'held jointly with local fire services'}}
+  ],
+  cards:[
+    {when:{ja:'通年',en:'All year'},t:{ja:'工場見学の受け入れ',en:'Plant tours'},p:{ja:'学校や地域の方々を迎え、ものづくりの現場を紹介しています。',en:'We welcome schools and neighbours to see how things are made.'}},
+    {when:{ja:'毎月',en:'Monthly'},t:{ja:'周辺道路の清掃',en:'Street clean-ups'},p:{ja:'社員が工場のまわりの道路や緑地を清掃しています。',en:'Employees clean the roads and green spaces around the plant.'}},
+    {when:{ja:'夏',en:'Summer'},t:{ja:'地元行事への参加',en:'Local festivals'},p:{ja:'地域のお祭りやイベントに参加し、まちを盛り上げています。',en:'We take part in local festivals and events.'}},
+    {when:{ja:'秋',en:'Autumn'},t:{ja:'小学校への出前授業',en:'School science classes'},p:{ja:'化学のおもしろさを、実験を通して子どもたちに伝えています。',en:'Hands-on experiments share the fun of chemistry with children.'}}
+  ],
+  safetyVid:{ja:'安全への取り組み',en:'Our commitment to safety'}
+};
+
+const S={lang:'ja',screen:'attract',page:'about',hot:'D',scene:0,step:0,idle:60,last:Date.now()};
+const t=o=>o[S.lang];
+
+/* ---------------- scaling ---------------- */
+function fit(){
+  const vp=$('viewport');
+  const s=Math.min(vp.clientWidth/1920, vp.clientHeight/1080);
+  stage.style.transform='translate(-50%,-50%) scale('+s+')';
+}
+addEventListener('resize',fit); fit();
+
+/* ---------------- renderers ---------------- */
+function renderTop(){
+  $('tb-name').textContent=t(T.ui.name);
+  $('tb-co').textContent=t(T.ui.co);
+  $('tb-sample').textContent=t(T.ui.sample);
+  $('idle-chip').textContent=t(T.ui.reset)+' '+S.idle+t(T.ui.sec);
+  $('fs-chip').textContent=t(T.ui.fs);
+  document.querySelectorAll('.langsw button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===S.lang));
+  $('idle-h').textContent=t(T.ui.idleH);
+  $('idle-p').textContent=t(T.ui.idleP);
+  $('idle-btn').textContent=t(T.ui.idleBtn);
+}
+function renderHome(){
+  const tiles=T.pages.map((p,i)=>`
+    <button class="tile${i===0?' lead':''}" data-act="page" data-page="${p.id}">
+      ${ICON[p.id]}
+      <span class="go" aria-hidden="true">→</span>
+      <span><h2>${t(p.title)}</h2><p>${t(p.desc)}</p></span>
+    </button>`).join('');
+  $('home').innerHTML=`
+    <div class="home-head"><h1>${t(T.ui.welcome)}</h1><p>${t(T.ui.pick)}</p></div>
+    <div class="tiles">${tiles}</div>`;
+}
+function video(label,len){
+  return `<div class="video" data-video>
+    <div class="screenarea">
+      <span class="ph mono">VIDEO · ${label}</span>
+      <button class="playbtn" data-act="play" aria-label="play"><svg viewBox="0 0 24 24"><path d="M5 3 L21 12 L5 21 Z"/></svg></button>
+      <span class="nowplaying">${t(T.ui.playing)}</span>
+    </div>
+    <div class="bar"><span>${label}</span><div class="prog"><i></i></div><span class="mono">${len}</span></div>
+  </div>`;
+}
+function mapSVG(){
+  const hs=[['A',210,160],['B',760,130],['C',240,445],['D',763,450]];
+  const spots=hs.map(([k,x,y])=>`
+    <g class="hs${S.hot===k?' on':''}" data-act="hot" data-hot="${k}" role="button" aria-label="${t(T.hotspots[k].name)}">
+      <circle class="halo" cx="${x}" cy="${y}" r="38" style="transform-origin:${x}px ${y}px"/>
+      <circle class="dot" cx="${x}" cy="${y}" r="38"/>
+      <text x="${x}" y="${y}">${k}</text>
+    </g>`).join('');
+  const lbl=hs.map(([k,x,y])=>`<text x="${x}" y="${y+68}" text-anchor="middle" font-size="22" font-weight="700" fill="#14232B" font-family="BIZ UDPGothic, sans-serif">${t(T.hotspots[k].name)}</text>`).join('');
+  return `<svg viewBox="0 0 900 600" aria-label="site map">
+    <rect x="12" y="12" width="876" height="576" rx="22" fill="#F6F8F7" stroke="#D2DBD8" stroke-width="3"/>
+    <rect x="12" y="300" width="876" height="44" fill="#E4EAE8"/>
+    <rect x="600" y="12" width="44" height="576" fill="#E4EAE8"/>
+    <path d="M24 322 H876 M622 24 V576" stroke="#fff" stroke-width="3" stroke-dasharray="18 14"/>
+    <rect x="44" y="44" width="330" height="228" rx="10" fill="#DAEAE8" stroke="#16757A" stroke-width="2"/>
+    <g fill="#fff" stroke="#16757A" stroke-width="3"><circle cx="440" cy="100" r="38"/><circle cx="530" cy="100" r="38"/><circle cx="440" cy="220" r="38"/><circle cx="530" cy="220" r="38"/></g>
+    <path d="M374 160 H560 M485 60 V260" stroke="#16757A" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+    <rect x="668" y="44" width="186" height="200" rx="10" fill="#fff" stroke="#586A70" stroke-width="2"/>
+    <rect x="44" y="372" width="410" height="184" rx="10" fill="#fff" stroke="#586A70" stroke-width="2"/>
+    <g fill="#E4EAE8"><rect x="470" y="392" width="54" height="30" rx="4"/><rect x="470" y="436" width="54" height="30" rx="4"/><rect x="470" y="480" width="54" height="30" rx="4"/></g>
+    <rect x="652" y="372" width="222" height="184" rx="10" fill="#FBE3D8" stroke="#E0592A" stroke-width="2"/>
+    <path d="M600 588 V560 M644 588 V560" stroke="#586A70" stroke-width="4"/>
+    <text x="622" y="578" text-anchor="middle" font-size="18" fill="#586A70" font-family="IBM Plex Mono, monospace">GATE</text>
+    <g transform="translate(612 22)"><path d="M0 34 L10 0 L20 34 L10 26 Z" fill="#14232B"/><text x="10" y="54" text-anchor="middle" font-size="18" fill="#14232B" font-family="IBM Plex Mono, monospace">N</text></g>
+    ${spots}${lbl}
+  </svg>`;
+}
+function body(){
+  const p=S.page;
+  if(p==='about'){
+    const h=T.hotspots[S.hot];
+    return `<div class="panel map">${mapSVG()}<span class="map-hint">${t(T.ui.tapmap)}</span></div>
+      <div class="side">
+        <div class="panel info"><span class="tag">${S.hot} · ${t(h.tag)}</span><h3>${t(h.name)}</h3><p>${t(h.text)}</p><div class="photo">${t(T.ui.photo)}</div></div>
+        <dl class="panel facts">${T.facts.map(f=>`<div class="fact"><dt>${t(f.k)}</dt><dd>${t(f.v)}</dd></div>`).join('')}</dl>
+      </div>`;
+  }
+  if(p==='products'){
+    const s=T.scenes[S.scene];
+    return `<div class="scenes">${T.scenes.map((x,i)=>`<button class="scene" data-act="scene" data-i="${i}" aria-pressed="${i===S.scene}">${SCENE_ICON[x.id]}${t(x.name)}</button>`).join('')}</div>
+      <div class="panel stage-scene">
+        <div class="big-ico">${SCENE_ICON[s.id]}</div>
+        <div class="scene-copy"><h3>${t(s.name)}</h3><p>${t(s.text)}</p><div class="legend"><i></i>${t(T.ui.matnote)}</div></div>
+      </div>`;
+  }
+  if(p==='process'){
+    const st=T.steps[S.step], n=T.steps.length;
+    const pct=S.step/(n-1)*80;
+    return `<div class="proc">
+      <div class="panel track" style="--flow-end:${10+pct}%">
+        <span class="rail"></span><span class="fill" style="width:${pct}%"></span>${S.step>0?'<span class="flowdot"></span>':''}
+        ${T.steps.map((x,i)=>`<button class="step${i<S.step?' done':''}${i===S.step?' cur':''}" data-act="step" data-i="${i}"><span class="n">${String(i+1).padStart(2,'0')}</span>${t(x.name)}</button>`).join('')}
+      </div>
+      <div class="proc-main">
+        ${video((S.lang==='ja'?'工程アニメーション':'Process animation')+' '+String(S.step+1).padStart(2,'0'),st.vid)}
+        <div class="panel proc-copy">
+          <span class="code mono">STEP ${String(S.step+1).padStart(2,'0')} / ${String(n).padStart(2,'0')}</span>
+          <h3>${t(st.name)}</h3><p>${t(st.text)}</p>
+          <div class="pager">
+            <button data-act="prev" ${S.step===0?'disabled':''}>${t(T.ui.prev)}</button>
+            ${S.step<n-1?`<button class="primary" data-act="next">${t(T.ui.next)}</button>`:`<button class="primary" data-act="home">${t(T.ui.done)}</button>`}
+          </div>
+        </div>
+      </div></div>`;
+  }
+  if(p==='safety'){
+    return `${video(t(T.safetyVid),'2:30')}
+      <dl class="kpis">${T.kpis.map(k=>`<div class="panel kpi"><dt>${t(k.k)}</dt><dd>${k.v}<small>${t(k.u)}</small></dd><span class="note">${t(k.n)}</span></div>`).join('')}</dl>`;
+  }
+  if(p==='community'){
+    return `<div class="cards">${T.cards.map(c=>`<article class="panel card"><div class="photo">${t(T.ui.photo)}</div><div class="txt"><span class="when mono">${t(c.when)}</span><h3>${t(c.t)}</h3><p>${t(c.p)}</p></div></article>`).join('')}</div>`;
+  }
+  return '';
+}
+function renderDetail(){
+  const pg=T.pages.find(x=>x.id===S.page);
+  $('detail').innerHTML=`
+    <div class="d-head"><span class="code mono">${pg.code}</span><h1>${t(pg.title)}</h1><p>${t(pg.desc)}</p></div>
+    <div class="d-body">${body()}</div>
+    <nav class="navbar">
+      <button class="btn-home" data-act="home"><svg viewBox="0 0 40 40"><path d="M5 19 L20 6 L35 19 V35 H5 Z"/></svg>${t(T.ui.top)}</button>
+      <div class="tabs">${T.pages.map(x=>`<button data-act="page" data-page="${x.id}" ${x.id===S.page?'aria-current="page"':''}>${t(x.title)}</button>`).join('')}</div>
+    </nav>`;
+}
+function renderAll(){renderTop(); if(S.screen==='home')renderHome(); if(S.screen==='detail')renderDetail();}
+
+/* ---------------- navigation ---------------- */
+function show(name){
+  S.screen=name;
+  ['attract','home','detail'].forEach(id=>$(id).classList.toggle('out',id!==name));
+  $('topbar').hidden=(name==='attract');
+  renderAll();
+}
+function toAttract(){
+  S.lang='ja'; S.page='about'; S.hot='D'; S.scene=0; S.step=0;
+  $('idle').hidden=true;
+  show('attract');
+}
+
+stage.addEventListener('contextmenu',e=>e.preventDefault());
+stage.addEventListener('pointerdown',()=>{S.last=Date.now(); if(!$('idle').hidden)$('idle').hidden=true;},true);
+stage.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]'); if(!el)return;
+  e.stopPropagation();
+  const a=el.dataset.act;
+  if(a==='start'){ if(el.dataset.lang)S.lang=el.dataset.lang; show('home'); }
+  else if(a==='lang'){ S.lang=el.dataset.lang; renderAll(); }
+  else if(a==='home'){ show('home'); }
+  else if(a==='page'){ S.page=el.dataset.page; S.step=0; S.scene=0; S.hot='D'; show('detail'); }
+  else if(a==='hot'){ S.hot=el.dataset.hot; renderDetail(); }
+  else if(a==='scene'){ S.scene=+el.dataset.i; renderDetail(); }
+  else if(a==='step'){ S.step=+el.dataset.i; renderDetail(); }
+  else if(a==='next'){ S.step=Math.min(S.step+1,T.steps.length-1); renderDetail(); }
+  else if(a==='prev'){ S.step=Math.max(S.step-1,0); renderDetail(); }
+  else if(a==='play'){ const v=el.closest('[data-video]'); v.classList.add('playing'); v.querySelector('.prog i').addEventListener('animationend',()=>v.classList.remove('playing'),{once:true}); }
+  else if(a==='keep'){ S.last=Date.now(); $('idle').hidden=true; }
+  else if(a==='idle-toggle'){ S.idle=S.idle===60?15:60; renderTop(); }
+  else if(a==='fs'){
+    const root=document.documentElement;
+    try{ const r=document.fullscreenElement?document.exitFullscreen():root.requestFullscreen(); if(r&&r.catch)r.catch(()=>{}); }catch(_){}
+  }
+});
+
+/* ---------------- idle timer ---------------- */
+setInterval(()=>{
+  const now=Date.now();
+  if(stage.querySelector('.video.playing')) S.last=now; // playback counts as activity
+  const d=new Date();
+  $('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  if(S.screen==='attract')return;
+  const remain=S.idle-(now-S.last)/1000;
+  if(remain<=0){toAttract();return;}
+  if(remain<=10){ $('idle').hidden=false; $('idle-n').textContent=Math.ceil(remain); }
+},250);
+
+/* ---------------- attract background: drifting ring structures ---------------- */
+const cv=$('bg'), cx=cv.getContext('2d');
+cv.width=1920; cv.height=1080;
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const N=30, nodes=[];
+for(let i=0;i<N;i++){
+  nodes.push({x:Math.random()*1920,y:Math.random()*1080,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:14+Math.random()*26,a:Math.random()*Math.PI,va:(Math.random()-.5)*.004,hot:Math.random()<.18});
+}
+function hex(x,y,r,a){cx.beginPath();for(let k=0;k<6;k++){const q=a+k*Math.PI/3;const px=x+r*Math.cos(q),py=y+r*Math.sin(q);k?cx.lineTo(px,py):cx.moveTo(px,py);}cx.closePath();}
+function draw(){
+  cx.clearRect(0,0,1920,1080);
+  for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
+    const A=nodes[i],B=nodes[j],dx=A.x-B.x,dy=A.y-B.y,d=Math.hypot(dx,dy);
+    if(d<300){cx.strokeStyle='rgba(157,180,179,'+(0.28*(1-d/300))+')';cx.lineWidth=2;cx.beginPath();cx.moveTo(A.x,A.y);cx.lineTo(B.x,B.y);cx.stroke();}
+  }
+  for(const n of nodes){
+    hex(n.x,n.y,n.r,n.a);
+    cx.lineWidth=3;
+    cx.strokeStyle=n.hot?'rgba(224,89,42,.9)':'rgba(234,242,240,.35)';
+    cx.stroke();
+    if(n.hot){cx.fillStyle='rgba(224,89,42,.12)';cx.fill();}
+  }
+}
+function tick(){
+  if(S.screen==='attract'){
+    for(const n of nodes){n.x+=n.vx;n.y+=n.vy;n.a+=n.va;
+      if(n.x<-60)n.x=1980; if(n.x>1980)n.x=-60; if(n.y<-60)n.y=1140; if(n.y>1140)n.y=-60;}
+    draw();
+  }
+  requestAnimationFrame(tick);
+}
+draw(); if(!reduce)requestAnimationFrame(tick);
+
+renderTop();
+})();
+</script>
+
+</body>
+</html>
